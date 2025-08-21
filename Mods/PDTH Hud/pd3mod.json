@@ -1,0 +1,11 @@
+{
+    "name": "PDTH Hud",
+    "authors": [
+        "Nadz"
+    ],
+    "version": "1.0",
+    "description": "PDTH Hud in PAYDAY 3",
+    "paks": [
+        "paks/PDTHHUD_v0_4_7_P.pak"
+    ]
+}
