@@ -1,6 +1,9 @@
-### SETUP ###
+### Setup ###
 
 Install the Requirements from requirements.txt
+
+The Command to run inside the Tool Folder:
+pip install -r requirements.txt
 
 ### Running the Tool ###
 
