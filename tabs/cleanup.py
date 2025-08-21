@@ -4,6 +4,8 @@ from tkinter import ttk, filedialog, messagebox
 import os
 import logging
 from utils.tooltip import ToolTip
+# Import the new styles file
+import utils.styles as styles
 
 class CleanupTab(ttk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -31,6 +33,9 @@ class CleanupTab(ttk.Frame):
         
         # Merge all prefixes into a single list for the Checkbutton frame
         self.all_prefixes = sorted(list(set([p for sublist in self.prefixes_by_category.values() for p in sublist])))
+        
+        # Correctly call apply_styles by passing a ttk.Style object
+        styles.apply_styles(ttk.Style(parent))
 
         self.create_widgets()
 
@@ -135,14 +140,37 @@ class CleanupTab(ttk.Frame):
             self.folder_entry.insert(0, folder_selected)
             self.root.last_folder_path = folder_selected
             self.status_bar.config(text=f"Folder selected: {folder_selected}")
-    
+
+    def scan_for_files(self, folder_path, selected_prefixes):
+        """Scans the specified folder for files with selected prefixes and returns a list of them."""
+        files_to_delete = []
+        for root, _, files in os.walk(folder_path):
+            for file in files:
+                if any(file.startswith(prefix) for prefix in selected_prefixes):
+                    files_to_delete.append(os.path.join(root, file))
+        return files_to_delete
+
     def show_log_output(self):
-        """Displays the log of the last deletion process in a messagebox."""
+        """Displays the log of the last deletion process in a new window."""
+        log_window = tk.Toplevel(self.root)
+        log_window.title("Deletion Log")
+        log_window.geometry("600x400")
+        log_window.configure(bg='#1a1a1a')
+        
+        # Use a Text widget for the log output to handle large amounts of text
+        log_text = tk.Text(log_window, wrap='word', bg='#1a1a1a', fg='white', relief='flat', font=('Helvetica', 10))
+        log_text.pack(expand=True, fill='both', padx=10, pady=10)
+        
+        # Add a scrollbar to the Text widget
+        scrollbar = ttk.Scrollbar(log_window, command=log_text.yview)
+        log_text['yscrollcommand'] = scrollbar.set
+        scrollbar.pack(side='right', fill='y')
+
         if not self.log_messages:
-            messagebox.showinfo("Log Output", "No logs available. Run a deletion process first.")
+            log_text.insert(tk.END, "No logs available. Run a deletion process first.")
         else:
-            log_text = "\n".join(self.log_messages)
-            messagebox.showinfo("Log Output", log_text)
+            log_text.insert(tk.END, "\n".join(self.log_messages))
+            log_text.yview_moveto('1.0') # Scroll to the top
 
     def delete_files(self):
         folder_path = self.folder_entry.get()
@@ -154,29 +182,30 @@ class CleanupTab(ttk.Frame):
         if not selected_prefixes:
             messagebox.showinfo("Info", "No prefixes selected for deletion.")
             return
-            
-        confirmation = messagebox.askyesno("Confirm Deletion", 
-                                           f"Are you sure you want to delete all files with the selected prefixes in:\n{folder_path}?\nThis action cannot be undone.")
-        if not confirmation:
-            return
-
-        self.status_bar.config(text="Scanning and deleting files...")
-        self.progress_bar["value"] = 0
-        self.progress_bar_label.config(text="0%")
-        self.root.update_idletasks()
         
         # Clear previous logs
         self.log_messages = []
 
-        # Get the list of files to delete
-        files_to_delete = []
-        for root, _, files in os.walk(folder_path):
-            for file in files:
-                if any(file.startswith(prefix) for prefix in selected_prefixes):
-                    files_to_delete.append(os.path.join(root, file))
+        # Scan for files before asking for confirmation
+        files_to_delete = self.scan_for_files(folder_path, selected_prefixes)
+        
+        total_files = len(files_to_delete)
+        if total_files == 0:
+            messagebox.showinfo("Deletion Complete", "No matching files found to delete.")
+            return
+            
+        confirmation = messagebox.askyesno("Confirm Deletion", 
+                                           f"Found {total_files} files to delete. Are you sure you want to delete them in:\n{folder_path}?\nThis action cannot be undone.")
+        if not confirmation:
+            self.status_bar.config(text="Deletion cancelled.")
+            return
+
+        self.status_bar.config(text="Deleting files...")
+        self.progress_bar["value"] = 0
+        self.progress_bar_label.config(text="0%")
+        self.root.update_idletasks()
 
         # Deletion logic with progress bar
-        total_files = len(files_to_delete)
         if total_files > 0:
             for i, file_path in enumerate(files_to_delete):
                 try:
@@ -196,9 +225,7 @@ class CleanupTab(ttk.Frame):
                 self.root.update_idletasks()
 
             messagebox.showinfo("Deletion Complete", f"Deleted {total_files} files.")
-        else:
-            messagebox.showinfo("Deletion Complete", "No matching files found to delete.")
-
+        
         self.status_bar.config(text="Deletion complete.")
         self.progress_bar["value"] = 100
         self.progress_bar_label.config(text="100%")
