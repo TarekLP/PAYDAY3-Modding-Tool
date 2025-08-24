@@ -9,7 +9,8 @@ class CreditsTab(ttk.Frame):
     """
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
-        
+        # We need to make sure status_bar is initialized for this tab.
+        self.status_bar = None
         self.create_widgets()
 
     def create_widgets(self):
@@ -25,8 +26,9 @@ class CreditsTab(ttk.Frame):
         ttk.Label(glass_box, text="A simple tool to help streamline the modding process for Payday 3.", style='TLabel').pack(pady=5)
         
         # --- Author and Libraries Section ---
-        ttk.Label(glass_box, text="Author: lenox", font=("Helvetica", 12, "bold"), style='TLabel').pack(pady=(20, 5))
+        ttk.Label(glass_box, text="Author: Tarek", font=("Helvetica", 12, "bold"), style='TLabel').pack(pady=(20, 5))
         ttk.Label(glass_box, text="Created with Python and the tkinter library.", style='TLabel').pack()
+        ttk.Label(glass_box, text="Thanks to Wednesday Enthusiast, ZeroZM0, Cupcake, Ershiozer and Pinki_Ninja for their Contributions to the Documentations.", style='TLabel').pack()
         
         # --- External Links Section ---
         ttk.Label(glass_box, text="Additional Resources:", font=("Helvetica", 12, "bold"), style='TLabel').pack(pady=(20, 5))
@@ -47,8 +49,11 @@ class CreditsTab(ttk.Frame):
         """
         try:
             webbrowser.open_new("https://greedman.carrd.co/")
+            if self.status_bar:
+                self.status_bar.config(text="Opened Tarek's Carrd page.")
         except Exception as e:
-            print(f"Failed to open URL: {e}")
+            if self.status_bar:
+                self.status_bar.config(text=f"Error opening link: {e}")
 
     def open_moolah_github(self):
         """
@@ -56,5 +61,8 @@ class CreditsTab(ttk.Frame):
         """
         try:
             webbrowser.open_new("https://github.com/MoolahModding")
+            if self.status_bar:
+                self.status_bar.config(text="Opened Moolah's GitHub page.")
         except Exception as e:
-            print(f"Failed to open URL: {e}")
+            if self.status_bar:
+                self.status_bar.config(text=f"Error opening link: {e}")
