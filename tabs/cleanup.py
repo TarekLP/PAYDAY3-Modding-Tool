@@ -26,7 +26,7 @@ class CleanupTab(ttk.Frame):
             "Animation Prefixes": ["A_", "ABP_", "AM_", "AO_", "BS_", "SK_", "SKM_", "PA_", "ABM_", "ANIM_", "ANM_"],
             "Mesh Prefixes": ["SM_", "SK_", "PM_", "UM_", "STAT_", "INST_"],
             "Niagara Prefixes": ["N_", "NS_"],
-            "UI Prefixes": ["WIDGET_", "UI_"],
+            "UI Prefixes": ["WBP_", "UI_"],
             "VFX Prefixes": ["FX_", "VFX_"],
             "Misc Prefixes": ["_C", "SBZ_", "BB_", "C_", "CT_", "DA_", "EQS_", "FFE_", "FT_", "SS_", "ST_", "SLOT_", "Var_", "WAD_", "WGD_", "WMD_", "WPD_", "WSD_", "WTD_"]
         }
