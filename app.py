@@ -11,6 +11,7 @@ from tabs.cleanup import CleanupTab
 from tabs.mod_packaging import ModPackagingTab
 from tabs.documentation import DocumentationTab
 from tabs.credits import CreditsTab
+from tabs.audio_adjustment import AudioAdjustmentTab
 
 # Import the existing ToolTip class
 from utils.tooltip import ToolTip
@@ -42,24 +43,27 @@ class UEFileDeleterApp(tk.Tk):
                 self.icon = PhotoImage(file=icon_path)
                 self.iconphoto(False, self.icon)
         except Exception as e:
-            logging.error(f"Failed to load window icon: {e}")
-        
-        # Apply the visual styles
-        self.style = ttk.Style(self)
+            logging.error(f"Could not load icon: {e}")
+
+        # Apply styles
+        self.style = ttk.Style()
         apply_styles(self.style)
 
-        # Create the main notebook (tabbed interface)
+        # Create a notebook (tabbed interface)
         self.notebook = ttk.Notebook(self)
-        self.notebook.pack(expand=True, fill="both", padx=10, pady=10)
+        self.notebook.pack(pady=10, expand=True, fill='both')
 
-        # Create and add the tabs
-        self.cleanup_tab = CleanupTab(self.notebook, style='TFrame')
-        self.mod_packaging_tab = ModPackagingTab(self.notebook, style='TFrame')
-        self.documentation_tab = DocumentationTab(self.notebook, style='TFrame')
-        self.credits_tab = CreditsTab(self.notebook, style='TFrame')
-        
+        # Create the individual tabs, passing only the parent notebook
+        self.cleanup_tab = CleanupTab(self.notebook, last_folder_path=self.last_folder_path)
+        self.mod_packaging_tab = ModPackagingTab(self.notebook)
+        self.audio_adjustment_tab = AudioAdjustmentTab(self.notebook)
+        self.documentation_tab = DocumentationTab(self.notebook)
+        self.credits_tab = CreditsTab(self.notebook)
+
+        # Add the tabs to the notebook
         self.notebook.add(self.cleanup_tab, text="Cleanup")
         self.notebook.add(self.mod_packaging_tab, text="Mod Packaging")
+        self.notebook.add(self.audio_adjustment_tab, text="Audio Adjustment")
         self.notebook.add(self.documentation_tab, text="Documentation")
         self.notebook.add(self.credits_tab, text="Credits")
 
@@ -73,12 +77,14 @@ class UEFileDeleterApp(tk.Tk):
         # Pass the status bar to each tab after they are created
         self.cleanup_tab.status_bar = self.status_bar
         self.mod_packaging_tab.status_bar = self.status_bar
+        self.audio_adjustment_tab.status_bar = self.status_bar
         self.documentation_tab.status_bar = self.status_bar
         self.credits_tab.status_bar = self.status_bar
         
         # Also pass the root window reference if needed (for update_idletasks)
         self.cleanup_tab.root = self
         self.mod_packaging_tab.root = self
+        self.audio_adjustment_tab.root = self
         self.documentation_tab.root = self
         self.credits_tab.root = self
         
@@ -87,8 +93,15 @@ class UEFileDeleterApp(tk.Tk):
         try:
             db_path = os.path.join("utils", "preferences.db")
             with shelve.open(db_path) as db:
-                self.last_folder_path = db.get("last_folder_path", "")
+                self.last_folder_path = db.get('last_folder', '')
         except Exception as e:
-            logging.error(f"Failed to load preferences: {e}")
-            # Ensure the app can still start if preferences are corrupted
-            self.last_folder_path = ""
+            logging.error(f"Could not load preferences: {e}")
+
+    def save_preferences(self, last_folder_path):
+        # Save the last used folder path to the database
+        try:
+            db_path = os.path.join("utils", "preferences.db")
+            with shelve.open(db_path) as db:
+                db['last_folder'] = last_folder_path
+        except Exception as e:
+            logging.error(f"Could not save preferences: {e}")
