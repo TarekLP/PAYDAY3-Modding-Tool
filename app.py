@@ -11,6 +11,7 @@ from tabs.cleanup import CleanupTab
 from tabs.mod_packaging import ModPackagingTab
 from tabs.documentation import DocumentationTab
 from tabs.credits import CreditsTab
+# Import the AudioAdjustmentTab class
 from tabs.audio_adjustment import AudioAdjustmentTab
 
 # Import the existing ToolTip class
@@ -34,6 +35,8 @@ class UEFileDeleterApp(tk.Tk):
 
         # Load last folder path from preferences
         self.last_folder_path = ""
+        self.last_media_csv_path = ""
+        self.last_localized_csv_path = ""
         self.load_preferences()
 
         # Set the window icon
@@ -43,27 +46,30 @@ class UEFileDeleterApp(tk.Tk):
                 self.icon = PhotoImage(file=icon_path)
                 self.iconphoto(False, self.icon)
         except Exception as e:
-            logging.error(f"Could not load icon: {e}")
+            logging.error(f"Failed to load icon: {e}")
 
-        # Apply styles
-        self.style = ttk.Style()
+        # Apply custom styles
+        self.style = ttk.Style(self)
         apply_styles(self.style)
 
-        # Create a notebook (tabbed interface)
+        # Create the notebook (tabbed interface)
         self.notebook = ttk.Notebook(self)
-        self.notebook.pack(pady=10, expand=True, fill='both')
+        self.notebook.pack(expand=True, fill='both')
 
-        # Create the individual tabs, passing only the parent notebook
+        # Create the tabs and add them to the notebook
         self.cleanup_tab = CleanupTab(self.notebook, last_folder_path=self.last_folder_path)
         self.mod_packaging_tab = ModPackagingTab(self.notebook)
-        self.audio_adjustment_tab = AudioAdjustmentTab(self.notebook)
+        # Pass the saved CSV paths to the audio adjustment tab
+        self.audio_adjustment_tab = AudioAdjustmentTab(self.notebook,
+                                                        last_folder_path=self.last_folder_path,
+                                                        last_media_csv_path=self.last_media_csv_path,
+                                                        last_localized_csv_path=self.last_localized_csv_path)
         self.documentation_tab = DocumentationTab(self.notebook)
         self.credits_tab = CreditsTab(self.notebook)
 
-        # Add the tabs to the notebook
         self.notebook.add(self.cleanup_tab, text="Cleanup")
-        self.notebook.add(self.mod_packaging_tab, text="Mod Packaging")
         self.notebook.add(self.audio_adjustment_tab, text="Audio Adjustment")
+        self.notebook.add(self.mod_packaging_tab, text="Mod Packaging")
         self.notebook.add(self.documentation_tab, text="Documentation")
         self.notebook.add(self.credits_tab, text="Credits")
 
@@ -89,19 +95,26 @@ class UEFileDeleterApp(tk.Tk):
         self.credits_tab.root = self
         
     def load_preferences(self):
-        # Load the last used folder path from the database
+        # Load the last used folder path and CSV paths from the database
         try:
             db_path = os.path.join("utils", "preferences.db")
             with shelve.open(db_path) as db:
-                self.last_folder_path = db.get('last_folder', '')
+                self.last_folder_path = db.get("last_folder_path", "")
+                self.last_media_csv_path = db.get("last_media_csv_path", "")
+                self.last_localized_csv_path = db.get("last_localized_csv_path", "")
         except Exception as e:
-            logging.error(f"Could not load preferences: {e}")
+            logging.error(f"Failed to load preferences: {e}")
 
-    def save_preferences(self, last_folder_path):
-        # Save the last used folder path to the database
+    def save_preferences(self, folder_path=None, media_csv_path=None, localized_csv_path=None):
+        # Save the last used folder path and CSV paths to the database
         try:
             db_path = os.path.join("utils", "preferences.db")
             with shelve.open(db_path) as db:
-                db['last_folder'] = last_folder_path
+                if folder_path is not None:
+                    db["last_folder_path"] = folder_path
+                if media_csv_path is not None:
+                    db["last_media_csv_path"] = media_csv_path
+                if localized_csv_path is not None:
+                    db["last_localized_csv_path"] = localized_csv_path
         except Exception as e:
-            logging.error(f"Could not save preferences: {e}")
+            logging.error(f"Failed to save preferences: {e}")

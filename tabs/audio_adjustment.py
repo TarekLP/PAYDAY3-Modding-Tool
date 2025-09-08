@@ -10,11 +10,13 @@ class AudioAdjustmentTab(ttk.Frame):
     """
     A tab to assist with audio file renaming and organization.
     """
-    def __init__(self, parent, last_folder_path="", **kwargs):
+    def __init__(self, parent, last_folder_path="", last_media_csv_path="", last_localized_csv_path="", **kwargs):
         super().__init__(parent, **kwargs)
         self.root = None
         self.status_bar = None
         self.last_folder_path = last_folder_path
+        self.last_media_csv_path = last_media_csv_path
+        self.last_localized_csv_path = last_localized_csv_path
         self.file_list = []
         self.id_to_name_map = {}
         self.name_to_id_map = {}
@@ -46,7 +48,7 @@ class AudioAdjustmentTab(ttk.Frame):
         
         ttk.Label(media_csv_frame, text="Select Media CSV:", style='TLabel').pack(side='left', padx=(0, 0))
 
-        self.media_csv_path_var = tk.StringVar()
+        self.media_csv_path_var = tk.StringVar(value=self.last_media_csv_path)
         self.media_csv_path_entry = ttk.Entry(media_csv_frame, textvariable=self.media_csv_path_var, width=50, style='TEntry')
         self.media_csv_path_entry.pack(side='left', expand=True, fill='x', padx=(0, 5))
         
@@ -60,7 +62,7 @@ class AudioAdjustmentTab(ttk.Frame):
         
         ttk.Label(localized_csv_frame, text="Select Localized Media CSV:", style='TLabel').pack(side='left', padx=(0, 0))
 
-        self.localized_csv_path_var = tk.StringVar()
+        self.localized_csv_path_var = tk.StringVar(value=self.last_localized_csv_path)
         self.localized_csv_path_entry = ttk.Entry(localized_csv_frame, textvariable=self.localized_csv_path_var, width=50, style='TEntry')
         self.localized_csv_path_entry.pack(side='left', expand=True, fill='x', padx=(0, 5))
         
@@ -97,12 +99,24 @@ class AudioAdjustmentTab(ttk.Frame):
         self.log_text.pack(side='left', fill='both', expand=True)
         log_scrollbar.pack(side='right', fill='y')
 
+    def update_status(self, message):
+        """Updates the text of the main application's status bar."""
+        if self.status_bar:
+            self.status_bar.config(text=message)
+
+    def log_message(self, message):
+        """Appends a message to the log text widget."""
+        self.log_text.configure(state='normal')
+        self.log_text.insert(tk.END, message + "\n")
+        self.log_text.see(tk.END)
+        self.log_text.configure(state='disabled')
+
     def browse_folder(self):
         folder_selected = filedialog.askdirectory()
         if folder_selected:
             self.folder_path_var.set(folder_selected)
             if self.root:
-                self.root.save_preferences(folder_selected)
+                self.root.save_preferences(folder_path=folder_selected)
             self.update_status(f"Folder selected: {folder_selected}")
 
     def browse_media_csv(self):
@@ -111,6 +125,8 @@ class AudioAdjustmentTab(ttk.Frame):
         )
         if csv_selected:
             self.media_csv_path_var.set(csv_selected)
+            if self.root:
+                self.root.save_preferences(media_csv_path=csv_selected)
             self.update_status(f"Media CSV selected: {os.path.basename(csv_selected)}")
 
     def browse_localized_csv(self):
@@ -119,6 +135,8 @@ class AudioAdjustmentTab(ttk.Frame):
         )
         if csv_selected:
             self.localized_csv_path_var.set(csv_selected)
+            if self.root:
+                self.root.save_preferences(localized_csv_path=csv_selected)
             self.update_status(f"Localized Media CSV selected: {os.path.basename(csv_selected)}")
 
 
@@ -159,44 +177,51 @@ class AudioAdjustmentTab(ttk.Frame):
             return None
     
     def find_audio_folders(self, root_folder):
+        """
+        Finds the 'Media' and 'Localized/Media' subdirectories
+        within the given root folder.
+        """
         audio_folders = []
-        for dirpath, dirnames, filenames in os.walk(root_folder):
-            if "wwise" in dirnames:
-                wwise_path = os.path.join(dirpath, "wwise")
-                for wwise_dir in os.listdir(wwise_path):
-                    full_wwise_dir_path = os.path.join(wwise_path, wwise_dir)
-                    if os.path.isdir(full_wwise_dir_path):
-                        if wwise_dir == "media":
-                            audio_folders.append(os.path.join(full_wwise_dir_path, "media"))
-                        elif wwise_dir == "localized":
-                            localized_path = os.path.join(full_wwise_dir_path, "media")
-                            audio_folders.append(localized_path)
-        return list(set(audio_folders))
+        
+        # Check for the main Media folder
+        media_path = os.path.join(root_folder, "Media")
+        if os.path.isdir(media_path):
+            audio_folders.append(media_path)
+        
+        # Check for the Localized/Media folder
+        localized_media_path = os.path.join(root_folder, "Localized", "Media")
+        if os.path.isdir(localized_media_path):
+            audio_folders.append(localized_media_path)
+
+        return audio_folders
 
 
     def start_renaming(self):
         root_folder = self.folder_path_var.get()
         media_csv_path = self.media_csv_path_var.get()
         localized_csv_path = self.localized_csv_path_var.get()
+        
+        # The list of file extensions to process
+        allowed_extensions = ['.uasset', '.uexp', '.ubulk']
 
         if not root_folder or not os.path.isdir(root_folder):
             messagebox.showerror("Error", "Please select a valid work folder.")
             return
         
-        if not media_csv_path or not os.path.exists(media_csv_path):
-            messagebox.showerror("Error", "Please select a valid Media CSV file.")
+        if not media_csv_path and not localized_csv_path:
+            messagebox.showerror("Error", "Please select at least one CSV file to proceed.")
             return
 
-        if not localized_csv_path or not os.path.exists(localized_csv_path):
-            messagebox.showerror("Error", "Please select a valid Localized Media CSV file.")
-            return
+        media_map = {}
+        localized_map = {}
 
-        media_map = self.load_id_map_from_csv(media_csv_path)
-        localized_map = self.load_id_map_from_csv(localized_csv_path)
-
-        if media_map is None or localized_map is None:
-            messagebox.showerror("Error", "Failed to load one or both CSV files.")
-            return
+        if media_csv_path and os.path.exists(media_csv_path):
+            media_map = self.load_id_map_from_csv(media_csv_path)
+            if media_map is None: return # Stop if loading failed
+        
+        if localized_csv_path and os.path.exists(localized_csv_path):
+            localized_map = self.load_id_map_from_csv(localized_csv_path)
+            if localized_map is None: return # Stop if loading failed
         
         self.update_status("Finding audio folders...")
         self.log_message("Starting audio file renaming process...")
@@ -204,26 +229,28 @@ class AudioAdjustmentTab(ttk.Frame):
         audio_folders = self.find_audio_folders(root_folder)
         
         if not audio_folders:
-            messagebox.showinfo("No Folders Found", "Could not find 'wwise/media' or 'wwise/localized/media' folders.")
+            messagebox.showinfo("No Folders Found", "Could not find 'Media' or 'Localized/Media' folders within the selected directory.")
             self.update_status("Renaming cancelled. No audio folders found.")
             return
 
         self.file_list = []
         for folder in audio_folders:
-            # Determine which map to use based on the folder path
-            if "localized" in os.path.normpath(folder).lower():
+            current_map = None
+            # Determine which map to use based on the folder path and if a map was loaded
+            if "Localized" in os.path.normpath(folder) and localized_map:
                 current_map = localized_map
-            else:
+            elif media_map:
                 current_map = media_map
 
-            for file_name in os.listdir(folder):
-                file_id = os.path.splitext(file_name)[0]
-                if file_id in current_map:
-                    self.file_list.append({
-                        "path": os.path.join(folder, file_name),
-                        "new_name": current_map[file_id],
-                        "id": file_id
-                    })
+            if current_map:
+                for file_name in os.listdir(folder):
+                    file_id, extension = os.path.splitext(file_name)
+                    if extension.lower() in allowed_extensions and file_id in current_map:
+                        self.file_list.append({
+                            "path": os.path.join(folder, file_name),
+                            "new_name": current_map[file_id],
+                            "id": file_id
+                        })
 
         total_files = len(self.file_list)
         if total_files == 0:
@@ -253,10 +280,21 @@ class AudioAdjustmentTab(ttk.Frame):
                 original_extension = os.path.splitext(file_data["path"])[1]
                 new_file_path = os.path.join(os.path.dirname(file_data["path"]), f"{file_data['new_name']}{original_extension}")
                 
+                # Check if the destination file already exists
+                if os.path.exists(new_file_path):
+                    log_message = f"Skipped: {os.path.basename(new_file_path)} already exists."
+                    self.log_message(log_message)
+                    logging.warning(log_message)
+                    continue
+
                 os.rename(file_data["path"], new_file_path)
-                log_message = f"Renamed {file_data['id']} to {os.path.basename(new_file_path)}"
+                log_message = f"Renamed {file_data['id']}{original_extension} to {os.path.basename(new_file_path)}"
                 self.log_message(log_message)
                 logging.info(log_message)
+            except PermissionError as e:
+                log_message = f"Failed to rename {file_data['path']}: Access is denied. The file may be in use. Please close any programs like Unreal Engine or Wwise."
+                self.log_message(log_message)
+                logging.error(log_message)
             except Exception as e:
                 log_message = f"Failed to rename {file_data['path']}: {e}"
                 self.log_message(log_message)
@@ -278,25 +316,28 @@ class AudioAdjustmentTab(ttk.Frame):
         root_folder = self.folder_path_var.get()
         media_csv_path = self.media_csv_path_var.get()
         localized_csv_path = self.localized_csv_path_var.get()
+        
+        # The list of file extensions to process
+        allowed_extensions = ['.uasset', '.uexp', '.ubulk']
+
 
         if not root_folder or not os.path.isdir(root_folder):
             messagebox.showerror("Error", "Please select a valid work folder.")
             return
         
-        if not media_csv_path or not os.path.exists(media_csv_path):
-            messagebox.showerror("Error", "Please select a valid Media CSV file.")
+        if not media_csv_path and not localized_csv_path:
+            messagebox.showerror("Error", "Please select at least one CSV file to proceed.")
             return
 
-        if not localized_csv_path or not os.path.exists(localized_csv_path):
-            messagebox.showerror("Error", "Please select a valid Localized Media CSV file.")
-            return
-        
-        media_map = self.load_name_to_id_map_from_csv(media_csv_path)
-        localized_map = self.load_name_to_id_map_from_csv(localized_csv_path)
+        media_map = {}
+        localized_map = {}
+        if media_csv_path and os.path.exists(media_csv_path):
+            media_map = self.load_name_to_id_map_from_csv(media_csv_path)
+            if media_map is None: return
 
-        if media_map is None or localized_map is None:
-            messagebox.showerror("Error", "Failed to load one or both CSV files.")
-            return
+        if localized_csv_path and os.path.exists(localized_csv_path):
+            localized_map = self.load_name_to_id_map_from_csv(localized_csv_path)
+            if localized_map is None: return
 
         self.update_status("Finding audio folders for reversion...")
         self.log_message("Starting audio file reversion process...")
@@ -304,25 +345,27 @@ class AudioAdjustmentTab(ttk.Frame):
         audio_folders = self.find_audio_folders(root_folder)
         
         if not audio_folders:
-            messagebox.showinfo("No Folders Found", "Could not find 'wwise/media' or 'wwise/localized/media' folders.")
+            messagebox.showinfo("No Folders Found", "Could not find 'Media' or 'Localized/Media' folders within the selected directory.")
             self.update_status("Reversion cancelled. No audio folders found.")
             return
 
         self.file_list = []
         for folder in audio_folders:
-            if "localized" in os.path.normpath(folder).lower():
+            current_map = None
+            if "Localized" in os.path.normpath(folder) and localized_map:
                 current_map = localized_map
-            else:
+            elif media_map:
                 current_map = media_map
 
-            for file_name in os.listdir(folder):
-                file_name_no_ext = os.path.splitext(file_name)[0]
-                if file_name_no_ext in current_map:
-                    self.file_list.append({
-                        "path": os.path.join(folder, file_name),
-                        "original_id": current_map[file_name_no_ext],
-                        "current_name": file_name_no_ext
-                    })
+            if current_map:
+                for file_name in os.listdir(folder):
+                    file_name_no_ext, extension = os.path.splitext(file_name)
+                    if extension.lower() in allowed_extensions and file_name_no_ext in current_map:
+                        self.file_list.append({
+                            "path": os.path.join(folder, file_name),
+                            "original_id": current_map[file_name_no_ext],
+                            "current_name": file_name_no_ext
+                        })
 
         total_files = len(self.file_list)
         if total_files == 0:
@@ -351,10 +394,21 @@ class AudioAdjustmentTab(ttk.Frame):
                 original_extension = os.path.splitext(file_data["path"])[1]
                 new_file_path = os.path.join(os.path.dirname(file_data["path"]), f"{file_data['original_id']}{original_extension}")
                 
+                # Check if the destination file already exists
+                if os.path.exists(new_file_path):
+                    log_message = f"Skipped: {os.path.basename(new_file_path)} already exists."
+                    self.log_message(log_message)
+                    logging.warning(log_message)
+                    continue
+                
                 os.rename(file_data["path"], new_file_path)
-                log_message = f"Reverted {file_data['current_name']} to {os.path.basename(new_file_path)}"
+                log_message = f"Reverted {file_data['current_name']}{original_extension} to {os.path.basename(new_file_path)}"
                 self.log_message(log_message)
                 logging.info(log_message)
+            except PermissionError as e:
+                log_message = f"Failed to revert {file_data['path']}: Access is denied. The file may be in use. Please close any programs like Unreal Engine or Wwise."
+                self.log_message(log_message)
+                logging.error(log_message)
             except Exception as e:
                 log_message = f"Failed to revert {file_data['path']}: {e}"
                 self.log_message(log_message)
