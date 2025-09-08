@@ -28,14 +28,14 @@ def apply_styles(style):
                   ('Horizontal.Progressbar.pbar', {'sticky': 'nswe'}),
                   ('Horizontal.Progressbar.label', {'sticky': 'nswe'})])
     style.configure('Horizontal.text.Green.TProgressbar', 
-                        thickness=10, 
-                        troughcolor='#1a1a1a', 
-                        background=GREEN, 
-                        bordercolor='#1a1a1a', 
-                        lightcolor=GREEN, 
-                        darkcolor=GREEN,
-                        foreground='white',
-                        font=('Helvetica', 8, 'bold'))
+                      thickness=10, 
+                      troughcolor='#1a1a1a', 
+                      background=GREEN, 
+                      bordercolor='#1a1a1a', 
+                      lightcolor=GREEN, 
+                      darkcolor=GREEN,
+                      foreground='white',
+                      font=('Helvetica', 8, 'bold'))
     
     # Configure the tab styling
     style.configure('TNotebook', background='#1a1a1a', borderwidth=0)
@@ -56,8 +56,15 @@ def apply_styles(style):
     style.map('TButton', 
         background=[('active', '#668058')],
     )
-    
-    # Change the text to black on hover while keeping the checkbox indicator white
-    style.map('TCheckbutton',
-        foreground=[('active', 'black')]
-    )
+
+    # This is the crucial fix for the TclError
+    style.layout('TLabelFrame', [('LabelFrame.border', {'sticky': 'nswe'}),
+                                 ('LabelFrame.padding', {'sticky': 'nswe', 'children': [
+                                     ('LabelFrame.label', {'sticky': 'nw'}),
+                                     ('LabelFrame.contents', {'sticky': 'nswe'})
+                                 ]})])
+
+    # Configure the LabelFrame title to match the dark theme.
+    # While both lines are required, some themes may still show a white background due to rendering quirks.
+    style.configure('TLabelFrame', background='#1a1a1a', foreground='white', font=('Helvetica', 12, 'bold'))
+    style.configure('TLabelFrame.Label', background='#1a1a1a', foreground='white', font=('Helvetica', 12, 'bold'))
