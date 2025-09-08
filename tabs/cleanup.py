@@ -23,10 +23,10 @@ class CleanupTab(ttk.Frame):
             "Audio Prefixes": ["LPS_", "WAV_", "MP3_", "OGG_", "SND_", "AUD_"],
             "Textures Prefixes": ["T_", "TD_", "N_", "R_"],
             "Materials Prefixes": ["M_", "MI_", "ML_", "MLB_", "MM_", "MF_", "MAT_"],
-            "Blueprint Prefixes": ["BP_", "PC_", "WBP_", "BT_"],
-            "Animation Prefixes": ["A_", "ABP_", "AM_", "AO_", "BS_", "SK_", "SKM_", "PA_", "ABM_", "ANIM_", "ANM_"],
+            "Blueprint Prefixes": ["BP_", "PC_", "BT_"],
+            "Animation Prefixes": ["A_", "ABP_", "AM_", "AO_", "BS_", "SKM_", "PA_", "ABM_", "ANIM_", "ANM_"],
             "Mesh Prefixes": ["SM_", "SK_", "PM_", "UM_", "STAT_", "INST_"],
-            "Niagara Prefixes": ["N_", "NS_"],
+            "Niagara Prefixes": ["NS_"],
             "UI Prefixes": ["WBP_", "UI_"],
             "VFX Prefixes": ["FX_", "VFX_"],
             "Misc Prefixes": ["_C", "SBZ_", "BB_", "C_", "CT_", "DA_", "EQS_", "FFE_", "FT_", "SS_", "ST_", "SLOT_", "Var_", "WAD_", "WGD_", "WMD_", "WPD_", "WSD_", "WTD_"]
@@ -39,9 +39,16 @@ class CleanupTab(ttk.Frame):
         glass_box = ttk.Frame(self, style='TFrame', padding=(15, 15), relief='groove', borderwidth=2)
         glass_box.pack(expand=True, fill="both", padx=10, pady=10)
 
+        # --- Configuration Section ---
+        config_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
+        config_frame.pack(fill='x', pady=(0, 10))
+
+        config_title = ttk.Label(config_frame, text="Configuration", style='TLabel', font=("Helvetica", 10, "bold"))
+        config_title.pack(anchor='w', pady=(0, 5))
+
         # Folder selection frame
-        folder_frame = ttk.Frame(glass_box, style='TFrame')
-        folder_frame.pack(fill='x', pady=5)
+        folder_frame = ttk.Frame(config_frame, style='TFrame')
+        folder_frame.pack(fill='x', pady=5, padx=5)
         
         ttk.Label(folder_frame, text="Select Folder:", style='TLabel').pack(side='left', padx=(0, 5))
 
@@ -53,13 +60,17 @@ class CleanupTab(ttk.Frame):
         browse_button.pack(side='left')
         ToolTip(browse_button, "Select the folder containing the mod files you want to clean up.")
 
+        # --- Prefix Selection Section ---
+        prefix_selection_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
+        prefix_selection_frame.pack(fill='both', expand=True, pady=5)
+
+        prefix_title = ttk.Label(prefix_selection_frame, text="Prefix Selection", style='TLabel', font=("Helvetica", 10, "bold"))
+        prefix_title.pack(anchor='w', pady=(0, 5))
+
         # Scrolled frame for checkboxes
-        scrolled_frame = ttk.Frame(glass_box, style='TFrame')
-        scrolled_frame.pack(fill='both', expand=True, pady=10)
-        
-        canvas = tk.Canvas(scrolled_frame, bg='#1a1a1a', highlightthickness=0)
-        scrollbar = ttk.Scrollbar(scrolled_frame, orient="vertical", command=canvas.yview)
-        scrollable_frame = ttk.Frame(canvas, style='TFrame')
+        canvas = tk.Canvas(prefix_selection_frame, bg='#1a1a1a', highlightthickness=0)
+        scrollbar = ttk.Scrollbar(prefix_selection_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas, style='TFrame', padding=(5, 5))
         
         scrollable_frame.bind(
             "<Configure>",
@@ -74,51 +85,69 @@ class CleanupTab(ttk.Frame):
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
         
-        # Grid for the categories inside the scrollable frame
-        scrollable_frame.grid_columnconfigure(0, weight=1)
-        
-        for category_index, (category, prefixes) in enumerate(self.prefixes_by_category.items()):
-            # Create a checkbutton for the whole category
+        # Create a checkbutton and a grid of prefixes for each category
+        for category, prefixes in self.prefixes_by_category.items():
+            # Create a LabelFrame for the category
+            category_frame = ttk.Frame(scrollable_frame, style='TFrame', padding=(10, 5), relief='groove', borderwidth=1)
+            category_frame.pack(fill='x', expand=True, pady=(0, 10), padx=5)
+
+            # Frame for title and toggle button
+            title_frame = ttk.Frame(category_frame, style='TFrame')
+            title_frame.pack(fill='x', expand=True, pady=(0, 5))
+
+            category_title = ttk.Label(title_frame, text=category, style='TLabel', font=("Helvetica", 9, "bold"))
+            category_title.pack(side='left')
+
+            # Create a checkbutton for the whole category to toggle all prefixes within it
             category_var = tk.BooleanVar(value=True)
             self.prefix_vars[category] = category_var
-            category_cb = ttk.Checkbutton(scrollable_frame, text=category, variable=category_var, style='TCheckbutton')
-            category_cb.grid(row=category_index*2, column=0, sticky='w', padx=(10,0))
+            category_cb = ttk.Checkbutton(title_frame, text="Toggle All", variable=category_var, style='TCheckbutton')
+            category_cb.pack(side='right')
             category_cb.configure(command=lambda cv=category_var, pfxs=prefixes: self.select_category(cv.get(), pfxs))
             
-            # Create a frame to hold the individual prefix checkboxes
-            prefix_frame = ttk.Frame(scrollable_frame, style='TFrame')
-            prefix_frame.grid(row=category_index*2, column=1, sticky='w', padx=(0, 10))
+            ttk.Separator(category_frame, orient='horizontal').pack(fill='x', pady=(0, 5))
+
+            # Create a frame to hold the individual prefix checkboxes in a grid
+            prefix_grid_frame = ttk.Frame(category_frame, style='TFrame')
+            prefix_grid_frame.pack(fill='x', expand=True)
             
-            # Create individual checkbuttons for each prefix
-            for prefix_index, prefix in enumerate(prefixes):
+            # Create individual checkbuttons for each prefix in a multi-column grid
+            num_columns = 5
+            for i, prefix in enumerate(prefixes):
                 prefix_var = tk.BooleanVar(value=True)
                 self.prefix_vars[prefix] = prefix_var
-                prefix_cb = ttk.Checkbutton(prefix_frame, text=prefix, variable=prefix_var, style='TCheckbutton')
-                prefix_cb.grid(row=prefix_index, column=0, sticky='w', padx=5, pady=2)
-
-            # Add separator between categories, but not after the last one
-            if category_index < len(self.prefixes_by_category) - 1:
-                separator_label = ttk.Label(scrollable_frame, text="---------------------------------", style='TLabel')
-                separator_label.grid(row=category_index*2 + 1, column=0, columnspan=2, sticky='ew', pady=5)
+                prefix_cb = ttk.Checkbutton(prefix_grid_frame, text=prefix, variable=prefix_var, style='TCheckbutton')
+                row, col = divmod(i, num_columns)
+                prefix_cb.grid(row=row, column=col, sticky='w', padx=5, pady=2)
                 
-        # Action buttons frame
-        action_frame = ttk.Frame(glass_box, style='TFrame')
-        action_frame.pack(fill='x', pady=10)
+        # --- Actions & Progress Section ---
+        action_progress_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
+        action_progress_frame.pack(fill='x', pady=(10, 0))
+
+        action_title = ttk.Label(action_progress_frame, text="Actions & Progress", style='TLabel', font=("Helvetica", 10, "bold"))
+        action_title.pack(anchor='w', pady=(0, 5))
+
+        # Action buttons sub-frame
+        button_frame = ttk.Frame(action_progress_frame, style='TFrame')
+        button_frame.pack(fill='x', pady=(0, 10))
 
         # Scan and Delete buttons
-        ttk.Button(action_frame, text="Scan Files", command=self.scan_files, style='TButton').pack(side='left', padx=(0, 5))
-        ttk.Button(action_frame, text="Delete Files", command=self.delete_files, style='Red.TButton').pack(side='left', padx=(5, 0))
+        ttk.Button(button_frame, text="Scan Files", command=self.scan_files, style='TButton').pack(side='left', padx=(0, 5))
+        ttk.Button(button_frame, text="Delete Files", command=self.delete_files, style='Red.TButton').pack(side='left', padx=(5, 0))
 
         # Progress bar and label
-        self.progress_bar = ttk.Progressbar(glass_box, orient='horizontal', length=100, mode='determinate', style='Horizontal.text.Green.TProgressbar')
-        self.progress_bar.pack(fill='x', pady=10)
-        self.progress_bar_label = ttk.Label(glass_box, text="0%", style='TLabel')
-        self.progress_bar_label.pack()
+        self.progress_bar = ttk.Progressbar(action_progress_frame, orient='horizontal', length=100, mode='determinate', style='Horizontal.text.Green.TProgressbar')
+        self.progress_bar.pack(fill='x', pady=5)
+        self.progress_bar_label = ttk.Label(action_progress_frame, text="0%", style='TLabel', anchor='center')
+        self.progress_bar_label.pack(fill='x')
 
         # Log window section
-        log_frame = ttk.LabelFrame(glass_box, text="Log", style='TFrame', padding=(10, 5))
-        log_frame.pack(fill='both', expand=True, pady=(5, 0))
+        log_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 5), relief='groove', borderwidth=1)
+        log_frame.pack(fill='both', expand=True, pady=(10, 0))
         
+        log_title = ttk.Label(log_frame, text="Log", style='TLabel', font=("Helvetica", 10, "bold"))
+        log_title.pack(anchor='w', pady=(0, 5))
+
         self.log_text = tk.Text(log_frame, wrap='word', bg='#2a2a2a', fg='white', relief='flat', state='disabled', font=('Helvetica', 10), insertbackground='white')
         log_scrollbar = ttk.Scrollbar(log_frame, command=self.log_text.yview)
         self.log_text['yscrollcommand'] = log_scrollbar.set
@@ -150,15 +179,14 @@ class CleanupTab(ttk.Frame):
         self.update_status("Scanning files...")
         self.log_message("Starting scan...")
 
-        selected_prefixes = []
-        for category, prefixes in self.prefixes_by_category.items():
-            if self.prefix_vars.get(category) and self.prefix_vars[category].get():
-                selected_prefixes.extend(prefixes)
-            else:
-                for prefix in prefixes:
-                    if self.prefix_vars.get(prefix) and self.prefix_vars[prefix].get():
-                        selected_prefixes.append(prefix)
-        
+        # The "Toggle All" checkbox for a category is a UI helper. The source of truth for which
+        # prefixes are selected should be the individual prefix checkboxes themselves.
+        # We iterate through all known prefixes and check the state of their corresponding variable.
+        selected_prefixes = [
+            prefix for prefixes in self.prefixes_by_category.values() for prefix in prefixes
+            if self.prefix_vars.get(prefix) and self.prefix_vars[prefix].get()
+        ]
+
         files_to_delete = []
         for root, _, files in os.walk(folder_path):
             for file in files:

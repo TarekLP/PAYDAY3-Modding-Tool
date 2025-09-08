@@ -31,25 +31,32 @@ class AudioAdjustmentTab(ttk.Frame):
         glass_box = ttk.Frame(self, style='TFrame', padding=(15, 15), relief='groove', borderwidth=2)
         glass_box.pack(expand=True, fill="both", padx=10, pady=10)
 
+        # --- Configuration Section ---
+        config_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
+        config_frame.pack(fill='x', pady=(0, 10))
+        
+        config_title = ttk.Label(config_frame, text="Configuration", style='TLabel', font=("Helvetica", 12, "bold"))
+        config_title.pack(anchor='w', pady=(0, 10))
+
         # Folder selection frame
-        folder_frame = ttk.Frame(glass_box, style='TFrame')
+        folder_frame = ttk.Frame(config_frame, style='TFrame')
         folder_frame.pack(fill='x', pady=5)
         
-        ttk.Label(folder_frame, text="Select Work Folder:", style='TLabel').pack(side='left', padx=(0, 0))
+        ttk.Label(folder_frame, text="Select Work Folder:", style='TLabel', width=28).pack(side='left', padx=(0, 5))
 
         self.folder_path_var = tk.StringVar(value=self.last_folder_path)
-        self.folder_path_entry = ttk.Entry(folder_frame, textvariable=self.folder_path_var, width=50, style='TEntry')
+        self.folder_path_entry = ttk.Entry(folder_frame, textvariable=self.folder_path_var, style='TEntry')
         self.folder_path_entry.pack(side='left', expand=True, fill='x', padx=(0, 5))
         
         browse_button = ttk.Button(folder_frame, text="Browse", command=self.browse_folder, style='TButton')
         browse_button.pack(side='left')
         ToolTip(browse_button, "Select the main work folder to find the audio files.")
         
-        # New section with a dropdown for selecting file type to process
-        options_frame = ttk.Frame(glass_box, style='TFrame')
+        # Dropdown for selecting file type to process
+        options_frame = ttk.Frame(config_frame, style='TFrame')
         options_frame.pack(fill='x', pady=5)
         
-        ttk.Label(options_frame, text="Select File Type to Process:", style='TLabel').pack(side='left', padx=(0, 10))
+        ttk.Label(options_frame, text="Select File Type to Process:", style='TLabel', width=28).pack(side='left', padx=(0, 5))
         
         self.file_type_combobox = ttk.Combobox(options_frame, textvariable=self.file_type_var, state='readonly', style='TCombobox')
         self.file_type_combobox['values'] = ("All", "Media (Audio)", "Localized (VO)")
@@ -57,13 +64,13 @@ class AudioAdjustmentTab(ttk.Frame):
         self.file_type_combobox.set("All")
 
         # Media CSV selection frame
-        media_csv_frame = ttk.Frame(glass_box, style='TFrame')
+        media_csv_frame = ttk.Frame(config_frame, style='TFrame')
         media_csv_frame.pack(fill='x', pady=5)
         
-        ttk.Label(media_csv_frame, text="Select Media CSV:", style='TLabel').pack(side='left', padx=(0, 0))
+        ttk.Label(media_csv_frame, text="Select Media CSV:", style='TLabel', width=28).pack(side='left', padx=(0, 5))
 
         self.media_csv_path_var = tk.StringVar(value=self.last_media_csv_path)
-        self.media_csv_path_entry = ttk.Entry(media_csv_frame, textvariable=self.media_csv_path_var, width=50, style='TEntry')
+        self.media_csv_path_entry = ttk.Entry(media_csv_frame, textvariable=self.media_csv_path_var, style='TEntry')
         self.media_csv_path_entry.pack(side='left', expand=True, fill='x', padx=(0, 5))
         
         browse_media_csv_button = ttk.Button(media_csv_frame, text="Browse", command=self.browse_media_csv, style='TButton')
@@ -71,22 +78,29 @@ class AudioAdjustmentTab(ttk.Frame):
         ToolTip(browse_media_csv_button, "Select the CSV for regular media (SFX, music).")
 
         # Localized Media CSV selection frame
-        localized_csv_frame = ttk.Frame(glass_box, style='TFrame')
+        localized_csv_frame = ttk.Frame(config_frame, style='TFrame')
         localized_csv_frame.pack(fill='x', pady=5)
         
-        ttk.Label(localized_csv_frame, text="Select Localized Media CSV:", style='TLabel').pack(side='left', padx=(0, 0))
+        ttk.Label(localized_csv_frame, text="Select Localized Media CSV:", style='TLabel', width=28).pack(side='left', padx=(0, 5))
 
         self.localized_csv_path_var = tk.StringVar(value=self.last_localized_csv_path)
-        self.localized_csv_path_entry = ttk.Entry(localized_csv_frame, textvariable=self.localized_csv_path_var, width=50, style='TEntry')
+        self.localized_csv_path_entry = ttk.Entry(localized_csv_frame, textvariable=self.localized_csv_path_var, style='TEntry')
         self.localized_csv_path_entry.pack(side='left', expand=True, fill='x', padx=(0, 5))
         
         browse_localized_csv_button = ttk.Button(localized_csv_frame, text="Browse", command=self.browse_localized_csv, style='TButton')
         browse_localized_csv_button.pack(side='left')
         ToolTip(browse_localized_csv_button, "Select the CSV for localized voice-over files.")
 
+        # --- Actions & Progress Section ---
+        action_progress_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
+        action_progress_frame.pack(fill='x', pady=10)
+
+        action_title = ttk.Label(action_progress_frame, text="Actions & Progress", style='TLabel', font=("Helvetica", 12, "bold"))
+        action_title.pack(anchor='w', pady=(0, 10))
+
         # Action buttons frame
-        action_button_frame = ttk.Frame(glass_box, style='TFrame')
-        action_button_frame.pack(pady=10)
+        action_button_frame = ttk.Frame(action_progress_frame, style='TFrame')
+        action_button_frame.pack(pady=5)
 
         # Rename button
         rename_button = ttk.Button(action_button_frame, text="Rename to Game Files", command=self.start_renaming, style='TButton')
@@ -97,16 +111,19 @@ class AudioAdjustmentTab(ttk.Frame):
         revert_button.pack(side='left', padx=5)
 
         # Progress bar and label
-        self.progress_bar = ttk.Progressbar(glass_box, orient='horizontal', length=100, mode='determinate', style='Horizontal.text.Green.TProgressbar')
-        self.progress_bar.pack(fill='x', pady=10)
-        self.progress_bar_label = ttk.Label(glass_box, text="0%", style='TLabel')
-        self.progress_bar_label.pack()
+        self.progress_bar = ttk.Progressbar(action_progress_frame, orient='horizontal', length=100, mode='determinate', style='Horizontal.text.Green.TProgressbar')
+        self.progress_bar.pack(fill='x', pady=(10, 5))
+        self.progress_bar_label = ttk.Label(action_progress_frame, text="0%", style='TLabel', anchor='center')
+        self.progress_bar_label.pack(fill='x')
 
-        # Log window section
-        log_frame = ttk.LabelFrame(glass_box, text="Log", style='TFrame', padding=(10, 5))
+        # --- Log Section ---
+        log_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 5), relief='groove', borderwidth=1)
         log_frame.pack(fill='both', expand=True, pady=(5, 0))
         
-        self.log_text = tk.Text(log_frame, wrap='word', bg='#1a1a1a', fg='white', relief='flat', state='disabled', font=('Helvetica', 10), insertbackground='white')
+        log_title = ttk.Label(log_frame, text="Log", style='TLabel', font=("Helvetica", 12, "bold"))
+        log_title.pack(anchor='w', pady=(0, 5))
+
+        self.log_text = tk.Text(log_frame, wrap='word', bg='#2a2a2a', fg='white', relief='flat', state='disabled', font=('Helvetica', 10), insertbackground='white')
         log_scrollbar = ttk.Scrollbar(log_frame, command=self.log_text.yview)
         self.log_text['yscrollcommand'] = log_scrollbar.set
         

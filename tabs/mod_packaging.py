@@ -22,80 +22,97 @@ class ModPackagingTab(ttk.Frame):
         glass_box = ttk.Frame(self, style='TFrame', padding=(15, 15), relief='groove', borderwidth=2)
         glass_box.pack(expand=True, fill="both", padx=10, pady=10)
 
-        form_frame = ttk.Frame(glass_box, style='TFrame', padding=(20, 20))
-        form_frame.pack(fill='both', expand=True)
-
-        self.mod_name_var = tk.StringVar()
-        self.mod_version_var = tk.StringVar()
-        self.icon_file_path_var = tk.StringVar()
-        
         # --- Mod Information Section ---
-        ttk.Label(form_frame, text="MOD INFORMATION", style='TLabel', font=("Helvetica", 14, "bold")).grid(row=0, column=0, columnspan=2, sticky='w', pady=(0, 5))
+        info_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
+        info_frame.pack(fill='x', pady=(0, 10))
         
-        # Mod Name
-        ttk.Label(form_frame, text="Mod Name:", style='TLabel').grid(row=1, column=0, sticky='w', pady=5)
-        ttk.Entry(form_frame, textvariable=self.mod_name_var, width=50).grid(row=1, column=1, padx=5, pady=5, sticky='ew')
+        info_title = ttk.Label(info_frame, text="Mod Information", style='TLabel', font=("Helvetica", 12, "bold"))
+        info_title.pack(anchor='w', pady=(0, 10))
 
-        # Mod Authors (now multi-line)
-        ttk.Label(form_frame, text="Mod Authors:", style='TLabel').grid(row=2, column=0, sticky='w', pady=5)
-        self.mod_author_text = tk.Text(form_frame, height=3, width=40, bg='#333333', fg='white', relief='flat')
-        self.mod_author_text.grid(row=2, column=1, padx=5, pady=5, sticky='ew')
-        ttk.Label(form_frame, text="Separate authors by new line.", style='TLabel', foreground="#999999", font=("Helvetica", 8)).grid(row=3, column=1, sticky='w', padx=5)
+        # Row for Mod Name
+        name_frame = ttk.Frame(info_frame, style='TFrame')
+        name_frame.pack(fill='x', pady=3)
+        ttk.Label(name_frame, text="Mod Name:", style='TLabel', width=15).pack(side='left')
+        self.mod_name_var = tk.StringVar()
+        ttk.Entry(name_frame, textvariable=self.mod_name_var).pack(side='left', expand=True, fill='x')
 
-        # Mod Version
-        ttk.Label(form_frame, text="Mod Version:", style='TLabel').grid(row=4, column=0, sticky='w', pady=5)
-        ttk.Entry(form_frame, textvariable=self.mod_version_var, width=50).grid(row=4, column=1, padx=5, pady=5, sticky='ew')
-
-        # Mod Description
-        ttk.Label(form_frame, text="Mod Description:", style='TLabel').grid(row=5, column=0, sticky='w', pady=5)
-        self.mod_description_text = tk.Text(form_frame, height=5, width=40, bg='#333333', fg='white', relief='flat')
-        self.mod_description_text.grid(row=5, column=1, padx=5, pady=5, sticky='ew')
+        # Row for Mod Authors
+        authors_frame = ttk.Frame(info_frame, style='TFrame')
+        authors_frame.pack(fill='x', pady=3, anchor='n')
+        ttk.Label(authors_frame, text="Mod Authors:", style='TLabel', width=15).pack(side='left', anchor='n', pady=3)
+        self.mod_author_text = tk.Text(authors_frame, height=3, width=40, bg='#333333', fg='white', relief='flat', font=('Helvetica', 10), insertbackground='white')
+        self.mod_author_text.pack(side='left', expand=True, fill='x')
         
-        # --- Separator ---
-        ttk.Separator(form_frame, orient='horizontal').grid(row=6, column=0, columnspan=2, sticky='ew', pady=15)
-        
+        # Help text for authors
+        authors_help_frame = ttk.Frame(info_frame, style='TFrame')
+        authors_help_frame.pack(fill='x', pady=(0, 5))
+        ttk.Label(authors_help_frame, text="", width=15).pack(side='left') # Spacer
+        ttk.Label(authors_help_frame, text="Separate authors by new line.", style='TLabel', foreground="#999999", font=("Helvetica", 8)).pack(side='left')
+
+        # Row for Mod Version
+        version_frame = ttk.Frame(info_frame, style='TFrame')
+        version_frame.pack(fill='x', pady=3)
+        ttk.Label(version_frame, text="Mod Version:", style='TLabel', width=15).pack(side='left')
+        self.mod_version_var = tk.StringVar()
+        ttk.Entry(version_frame, textvariable=self.mod_version_var).pack(side='left', expand=True, fill='x')
+
+        # Row for Mod Description
+        desc_frame = ttk.Frame(info_frame, style='TFrame')
+        desc_frame.pack(fill='x', pady=3, anchor='n')
+        ttk.Label(desc_frame, text="Mod Description:", style='TLabel', width=15).pack(side='left', anchor='n', pady=3)
+        self.mod_description_text = tk.Text(desc_frame, height=5, width=40, bg='#333333', fg='white', relief='flat', font=('Helvetica', 10), insertbackground='white')
+        self.mod_description_text.pack(side='left', expand=True, fill='x')
+
         # --- Mod Files Section ---
-        ttk.Label(form_frame, text="MOD FILES", style='TLabel', font=("Helvetica", 14, "bold")).grid(row=7, column=0, columnspan=2, sticky='w', pady=(0, 5))
+        files_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
+        files_frame.pack(fill='x', expand=True, pady=10)
+
+        files_title = ttk.Label(files_frame, text="Mod Files", style='TLabel', font=("Helvetica", 12, "bold"))
+        files_title.pack(anchor='w', pady=(0, 10))
+
+        # Row for Icon File
+        icon_frame = ttk.Frame(files_frame, style='TFrame')
+        icon_frame.pack(fill='x', pady=3)
+        ttk.Label(icon_frame, text="Icon File:", style='TLabel', width=15).pack(side='left')
+        self.icon_file_path_var = tk.StringVar()
+        ttk.Entry(icon_frame, textvariable=self.icon_file_path_var).pack(side='left', expand=True, fill='x', padx=(0, 5))
+        ttk.Button(icon_frame, text="Browse", command=self.browse_icon_file).pack(side='left')
+
+        # Row for PAK File List
+        pak_frame = ttk.Frame(files_frame, style='TFrame')
+        pak_frame.pack(fill='both', expand=True, pady=3)
+        ttk.Label(pak_frame, text=".PAK Files:", style='TLabel', width=15).pack(side='left', anchor='n', pady=3)
         
-        # Icon File
-        icon_frame = ttk.Frame(form_frame, style='TFrame')
-        icon_frame.grid(row=8, column=0, columnspan=2, sticky='ew', pady=5)
-
-        ttk.Label(icon_frame, text="Icon File:", style='TLabel').pack(side='left', padx=(0, 5))
-        ttk.Entry(icon_frame, textvariable=self.icon_file_path_var, width=40).pack(side='left', expand=True, fill='x', padx=(0, 5))
-        ttk.Button(icon_frame, text="Browse", command=self.browse_icon_file, width=15).pack(side='left')
-
-        # PAK File List
-        pak_frame = ttk.Frame(form_frame, style='TFrame')
-        pak_frame.grid(row=9, column=0, columnspan=2, sticky='ew', pady=5)
-
-        ttk.Label(pak_frame, text=".PAK Files:", style='TLabel').pack(side='left', anchor='n', padx=(0, 0))
-
-        listbox_frame = ttk.Frame(pak_frame, style='TFrame')
-        listbox_frame.pack(side='left', expand=True, fill='both')
-
-        self.pak_listbox = tk.Listbox(listbox_frame, selectmode='multiple', bg='#333333', fg='white', relief='flat', height=5, selectbackground=GREEN, selectforeground='black')
+        listbox_container = ttk.Frame(pak_frame, style='TFrame')
+        listbox_container.pack(side='left', fill='both', expand=True)
+        
+        self.pak_listbox = tk.Listbox(listbox_container, selectmode='multiple', bg='#333333', fg='white', relief='flat', height=5, selectbackground=GREEN, selectforeground='black', font=('Helvetica', 10))
         self.pak_listbox.pack(side='left', fill='both', expand=True)
 
-        
-        # Buttons for PAK listbox
-        pak_buttons_frame = ttk.Frame(pak_frame, style='TFrame')
-        pak_buttons_frame.pack(side='right', fill='y', padx=5)
-        
-        ttk.Button(pak_buttons_frame, text="Add PAKs", command=self.add_pak_files, width=15).pack(pady=2, fill='x')
-        ttk.Button(pak_buttons_frame, text="Remove Selected", command=self.remove_pak_files, width=15).pack(pady=2, fill='x')
+        pak_buttons_frame = ttk.Frame(listbox_container, style='TFrame')
+        pak_buttons_frame.pack(side='right', fill='y', padx=(5, 0))
+        ttk.Button(pak_buttons_frame, text="Add", command=self.add_pak_files).pack(pady=2, fill='x')
+        ttk.Button(pak_buttons_frame, text="Remove", command=self.remove_pak_files).pack(pady=2, fill='x')
 
-        # Generate Button
-        generate_button = ttk.Button(form_frame, text="Create Mod", command=self.create_mod, width=25)
-        generate_button.grid(row=10, column=0, columnspan=2, pady=20)
-        
-        # Save/Load Profile Buttons
-        profile_buttons_frame = ttk.Frame(glass_box, style='TFrame')
-        profile_buttons_frame.pack(fill='x', pady=10)
-        ttk.Button(profile_buttons_frame, text="Save Profile", command=self.save_profile, width=20).pack(side='left', expand=True, padx=(0, 5))
-        ttk.Button(profile_buttons_frame, text="Load Profile", command=self.load_profile, width=20).pack(side='right', expand=True, padx=(5, 0))
+        # --- Actions Section ---
+        actions_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
+        actions_frame.pack(fill='x', pady=(10, 0))
 
-        form_frame.columnconfigure(1, weight=1)
+        actions_title = ttk.Label(actions_frame, text="Actions", style='TLabel', font=("Helvetica", 12, "bold"))
+        actions_title.pack(anchor='w', pady=(0, 10))
+
+        # A frame to center the main "Create Mod" button
+        create_button_frame = ttk.Frame(actions_frame, style='TFrame')
+        create_button_frame.pack(fill='x', pady=5)
+        ttk.Button(create_button_frame, text="Create Mod", command=self.create_mod).pack()
+
+        ttk.Separator(actions_frame, orient='horizontal').pack(fill='x', pady=10)
+
+        # A frame for the profile buttons
+        profile_buttons_frame = ttk.Frame(actions_frame, style='TFrame')
+        profile_buttons_frame.pack(fill='x')
+        ttk.Button(profile_buttons_frame, text="Save Profile", command=self.save_profile).pack(side='left', expand=True, padx=(0, 5))
+        ttk.Button(profile_buttons_frame, text="Load Profile", command=self.load_profile).pack(side='right', expand=True, padx=(5, 0))
 
     def handle_dnd_drop(self, event):
         files = self.tk.splitlist(event.data)
@@ -224,4 +241,3 @@ class ModPackagingTab(ttk.Frame):
         except Exception as e:
             messagebox.showerror("Error", f"Could not load profile: {e}")
             logging.error(f"Profile load error: {e}")
-

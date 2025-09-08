@@ -18,4 +18,4 @@ PREFIXES = {
 }
 
 # Application Version
-APP_VERSION = "v1.0.5"
+APP_VERSION = "v2.0.0"
