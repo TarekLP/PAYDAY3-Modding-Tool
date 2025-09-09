@@ -5,7 +5,6 @@ import os
 import shutil
 import json
 import logging
-import zipfile
 
 # PD3 green accent
 GREEN = "#62854f"
@@ -16,14 +15,36 @@ class ModPackagingTab(ttk.Frame):
         self.parent = parent
         self.status_bar = None
         self.create_widgets()
-        self.load_profile()
 
     def create_widgets(self):
         glass_box = ttk.Frame(self, style='TFrame', padding=(15, 15), relief='groove', borderwidth=2)
         glass_box.pack(expand=True, fill="both", padx=10, pady=10)
 
+        # Create a canvas and a scrollbar inside the glass_box
+        canvas = tk.Canvas(glass_box, bg='#1a1a1a', highlightthickness=0)
+        scrollbar = ttk.Scrollbar(glass_box, orient="vertical", command=canvas.yview)
+        
+        # This is the frame that will contain all the widgets and be scrolled
+        scrollable_frame = ttk.Frame(canvas, style='TFrame')
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        
+        def on_canvas_configure(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+        canvas.bind("<Configure>", on_canvas_configure)
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
         # --- Mod Information Section ---
-        info_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
+        info_frame = ttk.Frame(scrollable_frame, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
         info_frame.pack(fill='x', pady=(0, 10))
         
         info_title = ttk.Label(info_frame, text="Mod Information", style='TLabel', font=("Helvetica", 12, "bold"))
@@ -64,8 +85,8 @@ class ModPackagingTab(ttk.Frame):
         self.mod_description_text.pack(side='left', expand=True, fill='x')
 
         # --- Mod Files Section ---
-        files_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
-        files_frame.pack(fill='x', expand=True, pady=10)
+        files_frame = ttk.Frame(scrollable_frame, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
+        files_frame.pack(fill='x', pady=10)
 
         files_title = ttk.Label(files_frame, text="Mod Files", style='TLabel', font=("Helvetica", 12, "bold"))
         files_title.pack(anchor='w', pady=(0, 10))
@@ -75,12 +96,15 @@ class ModPackagingTab(ttk.Frame):
         icon_frame.pack(fill='x', pady=3)
         ttk.Label(icon_frame, text="Icon File:", style='TLabel', width=15).pack(side='left')
         self.icon_file_path_var = tk.StringVar()
-        ttk.Entry(icon_frame, textvariable=self.icon_file_path_var).pack(side='left', expand=True, fill='x', padx=(0, 5))
-        ttk.Button(icon_frame, text="Browse", command=self.browse_icon_file).pack(side='left')
+        self.icon_file_entry = ttk.Entry(icon_frame, textvariable=self.icon_file_path_var)
+        self.icon_file_entry.pack(side='left', expand=True, fill='x', padx=(0, 5))
+        ttk.Button(icon_frame, text="Browse", command=self.browse_icon_file, style='TButton').pack(side='left')
+        self.icon_file_entry.drop_target_register('DND_FILES')
+        self.icon_file_entry.dnd_bind('<<Drop>>', self.handle_icon_dnd_drop)
 
         # Row for PAK File List
         pak_frame = ttk.Frame(files_frame, style='TFrame')
-        pak_frame.pack(fill='both', expand=True, pady=3)
+        pak_frame.pack(fill='both', pady=3)
         ttk.Label(pak_frame, text=".PAK Files:", style='TLabel', width=15).pack(side='left', anchor='n', pady=3)
         
         listbox_container = ttk.Frame(pak_frame, style='TFrame')
@@ -88,14 +112,16 @@ class ModPackagingTab(ttk.Frame):
         
         self.pak_listbox = tk.Listbox(listbox_container, selectmode='multiple', bg='#333333', fg='white', relief='flat', height=5, selectbackground=GREEN, selectforeground='black', font=('Helvetica', 10))
         self.pak_listbox.pack(side='left', fill='both', expand=True)
+        self.pak_listbox.drop_target_register('DND_FILES')
+        self.pak_listbox.dnd_bind('<<Drop>>', self.handle_pak_dnd_drop)
 
         pak_buttons_frame = ttk.Frame(listbox_container, style='TFrame')
         pak_buttons_frame.pack(side='right', fill='y', padx=(5, 0))
-        ttk.Button(pak_buttons_frame, text="Add", command=self.add_pak_files).pack(pady=2, fill='x')
-        ttk.Button(pak_buttons_frame, text="Remove", command=self.remove_pak_files).pack(pady=2, fill='x')
+        ttk.Button(pak_buttons_frame, text="Add", command=self.add_pak_files, style='TButton').pack(pady=2, fill='x')
+        ttk.Button(pak_buttons_frame, text="Remove", command=self.remove_pak_files, style='TButton').pack(pady=2, fill='x')
 
         # --- Actions Section ---
-        actions_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
+        actions_frame = ttk.Frame(scrollable_frame, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
         actions_frame.pack(fill='x', pady=(10, 0))
 
         actions_title = ttk.Label(actions_frame, text="Actions", style='TLabel', font=("Helvetica", 12, "bold"))
@@ -104,21 +130,32 @@ class ModPackagingTab(ttk.Frame):
         # A frame to center the main "Create Mod" button
         create_button_frame = ttk.Frame(actions_frame, style='TFrame')
         create_button_frame.pack(fill='x', pady=5)
-        ttk.Button(create_button_frame, text="Create Mod", command=self.create_mod).pack()
+        ttk.Button(create_button_frame, text="Create Mod Folder", command=self.create_mod, style='TButton').pack()
 
         ttk.Separator(actions_frame, orient='horizontal').pack(fill='x', pady=10)
 
         # A frame for the profile buttons
         profile_buttons_frame = ttk.Frame(actions_frame, style='TFrame')
         profile_buttons_frame.pack(fill='x')
-        ttk.Button(profile_buttons_frame, text="Save Profile", command=self.save_profile).pack(side='left', expand=True, padx=(0, 5))
-        ttk.Button(profile_buttons_frame, text="Load Profile", command=self.load_profile).pack(side='right', expand=True, padx=(5, 0))
+        ttk.Button(profile_buttons_frame, text="Save Preset", command=self.save_preset, style='TButton').pack(side='left', expand=True, padx=(0, 5))
+        ttk.Button(profile_buttons_frame, text="Load Preset", command=self.load_preset, style='TButton').pack(side='right', expand=True, padx=(5, 0))
 
-    def handle_dnd_drop(self, event):
+    def handle_pak_dnd_drop(self, event):
         files = self.tk.splitlist(event.data)
         for file_path in files:
-            if file_path.endswith('.pak'):
+            if file_path.lower().endswith('.pak'):
                 self.pak_listbox.insert(tk.END, file_path)
+
+    def handle_icon_dnd_drop(self, event):
+        files = self.tk.splitlist(event.data)
+        if not files:
+            return
+        
+        # Find the first valid image file
+        for file_path in files:
+            if file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
+                self.icon_file_path_var.set(file_path)
+                break # Use the first valid file found
 
     def add_pak_files(self):
         file_paths = filedialog.askopenfilenames(filetypes=[("PAK files", "*.pak")])
@@ -196,30 +233,54 @@ class ModPackagingTab(ttk.Frame):
             messagebox.showerror("Error", f"An unexpected error occurred: {e}")
             logging.error(f"Mod packaging error: {e}")
 
-    def save_profile(self):
+    def save_preset(self):
         profile = {
             "name": self.mod_name_var.get(),
-            "authors": self.mod_author_text.get("1.0", tk.END).strip().split('\n'),
+            "authors": [author.strip() for author in self.mod_author_text.get("1.0", tk.END).strip().split('\n') if author.strip()],
             "version": self.mod_version_var.get(),
             "description": self.mod_description_text.get("1.0", tk.END).strip(),
             "icon_path": self.icon_file_path_var.get(),
             "pak_files": self.pak_listbox.get(0, tk.END)
         }
         
+        # Create profiles directory
+        profiles_dir = os.path.join(os.getcwd(), "Mods", "Profiles")
+        os.makedirs(profiles_dir, exist_ok=True)
+
+        file_path = filedialog.asksaveasfilename(
+            initialdir=profiles_dir,
+            title="Save Preset",
+            filetypes=[("JSON files", "*.json")],
+            defaultextension=".json"
+        )
+
+        if not file_path:
+            return  # User cancelled
+
         try:
-            with open("profile.json", "w") as f:
+            with open(file_path, "w") as f:
                 json.dump(profile, f, indent=4)
-            messagebox.showinfo("Success", "Mod profile saved successfully!")
+            messagebox.showinfo("Success", f"Preset saved successfully to {os.path.basename(file_path)}!")
         except Exception as e:
-            messagebox.showerror("Error", f"Could not save profile: {e}")
-            logging.error(f"Profile save error: {e}")
+            messagebox.showerror("Error", f"Could not save preset: {e}")
+            logging.error(f"Preset save error: {e}")
 
-    def load_profile(self):
-        if not os.path.exists("profile.json"):
-            return
+    def load_preset(self):
+        # Create profiles directory if it doesn't exist
+        profiles_dir = os.path.join(os.getcwd(), "Mods", "Profiles")
+        os.makedirs(profiles_dir, exist_ok=True)
+
+        file_path = filedialog.askopenfilename(
+            initialdir=profiles_dir,
+            title="Load Preset",
+            filetypes=[("JSON files", "*.json")]
+        )
+
+        if not file_path or not os.path.exists(file_path):
+            return  # User cancelled or file doesn't exist
 
         try:
-            with open("profile.json", "r") as f:
+            with open(file_path, "r") as f:
                 profile = json.load(f)
             
             self.mod_name_var.set(profile.get("name", ""))
@@ -237,7 +298,7 @@ class ModPackagingTab(ttk.Frame):
             for pak in profile.get("pak_files", []):
                 self.pak_listbox.insert(tk.END, pak)
             
-            messagebox.showinfo("Success", "Mod profile loaded successfully!")
+            messagebox.showinfo("Success", f"Preset '{os.path.basename(file_path)}' loaded successfully!")
         except Exception as e:
-            messagebox.showerror("Error", f"Could not load profile: {e}")
-            logging.error(f"Profile load error: {e}")
+            messagebox.showerror("Error", f"Could not load preset: {e}")
+            logging.error(f"Preset load error: {e}")

@@ -330,6 +330,9 @@ class AudioAdjustmentTab(ttk.Frame):
         if self.root:
             self.root.update_idletasks()
 
+        renamed_count = 0
+        skipped_count = 0
+
         for i, file_data in enumerate(self.file_list):
             try:
                 # Add the original extension to the new filename
@@ -341,10 +344,12 @@ class AudioAdjustmentTab(ttk.Frame):
                     log_message = f"Skipped: {os.path.basename(new_file_path)} already exists."
                     self.log_message(log_message)
                     logging.warning(log_message)
+                    skipped_count += 1
                     continue
 
                 os.rename(file_data["path"], new_file_path)
                 log_message = f"Renamed {file_data['id']}{original_extension} to {os.path.basename(new_file_path)}"
+                renamed_count += 1
                 self.log_message(log_message)
                 logging.info(log_message)
             except PermissionError as e:
@@ -355,14 +360,16 @@ class AudioAdjustmentTab(ttk.Frame):
                 log_message = f"Failed to rename {file_data['path']}: {e}"
                 self.log_message(log_message)
                 logging.error(log_message)
-            
-            progress = (i + 1) / total_files * 100
-            self.progress_bar["value"] = progress
-            self.progress_bar_label.config(text=f"{progress:.0f}%")
-            if self.root:
-                self.root.update_idletasks()
 
-        messagebox.showinfo("Renaming Complete", f"Successfully renamed {total_files} files.")
+            if (i + 1) % 50 == 0 or (i + 1) == total_files:
+                progress = (i + 1) / total_files * 100
+                self.progress_bar["value"] = progress
+                self.progress_bar_label.config(text=f"{progress:.0f}%")
+                if self.root:
+                    self.root.update_idletasks()
+
+        summary_message = f"Process finished.\n\nRenamed: {renamed_count}\nSkipped (already exist): {skipped_count}"
+        messagebox.showinfo("Renaming Complete", summary_message)
         self.update_status("Renaming complete.")
         self.log_message("Renaming process finished.")
         self.progress_bar["value"] = 100
@@ -457,6 +464,9 @@ class AudioAdjustmentTab(ttk.Frame):
         if self.root:
             self.root.update_idletasks()
 
+        reverted_count = 0
+        skipped_count = 0
+
         for i, file_data in enumerate(self.file_list):
             try:
                 original_extension = os.path.splitext(file_data["path"])[1]
@@ -467,10 +477,12 @@ class AudioAdjustmentTab(ttk.Frame):
                     log_message = f"Skipped: {os.path.basename(new_file_path)} already exists."
                     self.log_message(log_message)
                     logging.warning(log_message)
+                    skipped_count += 1
                     continue
                 
                 os.rename(file_data["path"], new_file_path)
                 log_message = f"Reverted {file_data['current_name']}{original_extension} to {os.path.basename(new_file_path)}"
+                reverted_count += 1
                 self.log_message(log_message)
                 logging.info(log_message)
             except PermissionError as e:
@@ -482,13 +494,16 @@ class AudioAdjustmentTab(ttk.Frame):
                 self.log_message(log_message)
                 logging.error(log_message)
 
-            progress = (i + 1) / total_files * 100
-            self.progress_bar["value"] = progress
-            self.progress_bar_label.config(text=f"{progress:.0f}%")
-            if self.root:
-                self.root.update_idletasks()
+            # --- Performance Improvement: Update UI periodically instead of every iteration ---
+            if (i + 1) % 50 == 0 or (i + 1) == total_files:
+                progress = (i + 1) / total_files * 100
+                self.progress_bar["value"] = progress
+                self.progress_bar_label.config(text=f"{progress:.0f}%")
+                if self.root:
+                    self.root.update_idletasks()
 
-        messagebox.showinfo("Reversion Complete", f"Successfully reverted {total_files} files.")
+        summary_message = f"Process finished.\n\nReverted: {reverted_count}\nSkipped (already exist): {skipped_count}"
+        messagebox.showinfo("Reversion Complete", summary_message)
         self.update_status("Reversion complete.")
         self.log_message("Reversion process finished.")
         self.progress_bar["value"] = 100

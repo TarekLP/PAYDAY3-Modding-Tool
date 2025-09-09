@@ -5,6 +5,7 @@ from tkinter import PhotoImage
 import os
 import shelve
 import logging
+from tkinterdnd2 import TkinterDnD
 
 # Import the tab classes
 from tabs.cleanup import CleanupTab
@@ -22,11 +23,11 @@ from utils.styles import apply_styles
 # PD3 green accent
 GREEN = "#4a663b"
 
-class UEFileDeleterApp(tk.Tk):
+class UEFileDeleterApp(TkinterDnD.Tk):
     def __init__(self):
         super().__init__()
         self.title("PAYDAY 3 Modding Tool")
-        self.geometry("1024x768")
+        self.geometry("1280x720")
         self.style = None
         self.root = self
 

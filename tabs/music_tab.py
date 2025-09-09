@@ -1,10 +1,11 @@
 # tabs/music_tab.py
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog, messagebox
 import logging
 import pygame
 import os
 import random
+import shutil
 
 # The MusicPlayer class handles the backend logic for music playback.
 class MusicPlayer:
@@ -18,6 +19,7 @@ class MusicPlayer:
         self.is_paused = False
         self.current_volume = initial_volume
         self.current_song_name = "None"
+        self.current_song_index = -1  # To track the current song
         try:
             pygame.mixer.init()
         except pygame.error as e:
@@ -38,6 +40,31 @@ class MusicPlayer:
             for filename in files:
                 if filename.lower().endswith(('.mp3', '.wav', '.ogg', '.flac')):
                     self.music_files.append(os.path.join(root, filename))
+        random.shuffle(self.music_files)  # Shuffle for varied playback order
+
+    def _play_song(self, index):
+        """
+        Private method to play a song by its index in the music_files list.
+        """
+        if not self.music_files or not (0 <= index < len(self.music_files)):
+            logging.warning("Invalid song index or no music files.")
+            self.stop_music()
+            return
+
+        song_path = self.music_files[index]
+        try:
+            pygame.mixer.music.load(song_path)
+            pygame.mixer.music.set_volume(self.current_volume)
+            pygame.mixer.music.play(-1)  # Loop indefinitely
+            self.is_playing = True
+            self.is_paused = False
+            self.current_song_index = index
+            self.current_song_name = os.path.basename(song_path)
+        except pygame.error as e:
+            logging.error(f"Could not play song {song_path}: {e}")
+            self.is_playing = False
+            self.is_paused = False
+            self.current_song_name = "Error"
 
     def play_random_song(self):
         """
@@ -47,20 +74,35 @@ class MusicPlayer:
             logging.warning("No music files found to play.")
             return
 
-        song_path = random.choice(self.music_files)
-        try:
-            pygame.mixer.music.load(song_path)
-            pygame.mixer.music.set_volume(self.current_volume)
-            pygame.mixer.music.play(-1)  # Loop indefinitely
-            self.is_playing = True
-            self.is_paused = False
-            self.current_song_name = os.path.basename(song_path)
-        except pygame.error as e:
-            logging.error(f"Could not play song {song_path}: {e}")
-            self.is_playing = False
-            self.is_paused = False
-            self.current_song_name = "Error"
-        
+        random_index = random.randint(0, len(self.music_files) - 1)
+        self._play_song(random_index)
+
+    def play_next_song(self):
+        """
+        Plays the next song in the list. If no song is playing, starts a random one.
+        """
+        if not self.music_files:
+            return
+
+        if self.current_song_index == -1:
+            self.play_random_song()
+        else:
+            next_index = (self.current_song_index + 1) % len(self.music_files)
+            self._play_song(next_index)
+
+    def play_previous_song(self):
+        """
+        Plays the previous song in the list. If no song is playing, starts a random one.
+        """
+        if not self.music_files:
+            return
+
+        if self.current_song_index == -1:
+            self.play_random_song()
+        else:
+            prev_index = (self.current_song_index - 1) % len(self.music_files)
+            self._play_song(prev_index)
+
     def play_music(self):
         """
         Starts or resumes music playback.
@@ -91,6 +133,7 @@ class MusicPlayer:
         self.is_playing = False
         self.is_paused = False
         self.current_song_name = "None"
+        self.current_song_index = -1
 
     def set_volume(self, volume):
         """
@@ -124,6 +167,8 @@ class MusicTab(ttk.Frame):
         music_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'utils', 'Music')
         self.music_player = MusicPlayer(music_dir, initial_volume=music_volume)
         self.music_player.load_music_from_folder()
+
+        self.volume_percent_var = tk.StringVar()
 
         # Attributes for the visualizer
         self.visualizer_bars = []
@@ -163,27 +208,48 @@ class MusicTab(ttk.Frame):
         control_frame = ttk.Frame(music_frame, style='TFrame')
         control_frame.pack(pady=(0, 10))
         
+        self.prev_button = ttk.Button(control_frame, text="Prev", command=self.prev_song, style='TButton', width=8)
+        self.prev_button.pack(side='left', padx=5)
+        
         self.play_pause_button = ttk.Button(control_frame, text="Play", command=self.toggle_music, style='TButton', width=10)
         self.play_pause_button.pack(side='left', padx=5)
         
         self.stop_button = ttk.Button(control_frame, text="Stop", command=self.stop_music, style='TButton', width=10)
         self.stop_button.pack(side='left', padx=5)
         
+        self.next_button = ttk.Button(control_frame, text="Next", command=self.next_song, style='TButton', width=8)
+        self.next_button.pack(side='left', padx=5)
+        
         # Volume control slider
-        volume_frame = ttk.Frame(music_frame, style='TFrame')
-        volume_frame.pack(pady=10, fill='x', padx=20)
+        volume_container_frame = ttk.Frame(music_frame, style='TFrame')
+        volume_container_frame.pack(pady=10)
 
-        volume_label = ttk.Label(volume_frame, text="Volume:", style='TLabel')
+        volume_label = ttk.Label(volume_container_frame, text="Volume:", style='TLabel')
         volume_label.pack(side='left', padx=(0, 10))
 
         self.volume_slider = ttk.Scale(
-            volume_frame,
+            volume_container_frame,
             from_=0,
             to=1,
             orient="horizontal",
-            command=self.set_volume
+            command=self.set_volume,
+            style="Green.Horizontal.TScale",
+            length=150
         )
-        self.volume_slider.pack(side='left', expand=True, fill='x')
+        self.volume_slider.pack(side='left')
+
+        self.volume_percent_label = ttk.Label(volume_container_frame, textvariable=self.volume_percent_var, style='TLabel', width=5, anchor='w')
+        self.volume_percent_label.pack(side='left', padx=(5, 0))
+
+        # --- Manage Tracks Section ---
+        manage_frame = ttk.Frame(glass_box, style='TFrame', padding=(10, 10), relief='groove', borderwidth=1)
+        manage_frame.pack(pady=10, fill='x', padx=20)
+
+        manage_title = ttk.Label(manage_frame, text="Manage Tracks", style='TLabel', font=("Helvetica", 12, "bold"), anchor='center')
+        manage_title.pack(pady=(0, 10), fill='x')
+
+        add_button = ttk.Button(manage_frame, text="Add New Tracks...", command=self.add_tracks, style='TButton')
+        add_button.pack(pady=5)
 
     def on_canvas_resize(self, event):
         """Redraws the visualizer bars when the canvas is resized."""
@@ -258,34 +324,45 @@ class MusicTab(ttk.Frame):
         """
         Updates the UI elements based on the current music state.
         """
-        if self.music_player:
-            self.volume_slider.set(self.music_player.current_volume)
-            
-            if self.music_player.is_playing:
-                self.music_status_label.config(text=f"Now Playing: {self.music_player.current_song_name}")
-                self.play_pause_button.config(text="Pause")
-                self.stop_button.config(state='normal')
-                self.start_visualizer_animation()
-            else:
-                try:
-                    is_stopped = pygame.mixer.music.get_pos() == -1
-                except pygame.error:
-                    is_stopped = True
+        if not self.music_player:
+            return
 
-                if is_stopped:
-                    self.music_status_label.config(text="Music is Stopped")
-                    self.stop_button.config(state='disabled')
-                else:
-                    self.music_status_label.config(text="Music is Paused")
-                    self.stop_button.config(state='normal')
-                
-                self.play_pause_button.config(text="Play")
-                self.stop_visualizer_animation()
-            
-            if not self.music_player.music_files:
-                self.music_status_label.config(text="Music: No files found in utils/Music")
-                self.play_pause_button.config(state='disabled')
+        current_volume = self.music_player.current_volume
+        self.volume_slider.set(current_volume)
+        self.volume_percent_var.set(f"{int(current_volume * 100)}%")
+        has_music = bool(self.music_player.music_files)
+
+        # Enable/disable buttons based on whether music files exist
+        self.play_pause_button.config(state='normal' if has_music else 'disabled')
+        self.prev_button.config(state='normal' if has_music else 'disabled')
+        self.next_button.config(state='normal' if has_music else 'disabled')
+
+        if not has_music:
+            self.music_status_label.config(text="Music: No files found in utils/Music")
+            self.stop_button.config(state='disabled')
+            self.stop_visualizer_animation()
+            return
+
+        if self.music_player.is_playing:
+            self.music_status_label.config(text=f"Now Playing: {self.music_player.current_song_name}")
+            self.play_pause_button.config(text="Pause")
+            self.stop_button.config(state='normal')
+            self.start_visualizer_animation()
+        else:  # Paused or Stopped
+            self.stop_visualizer_animation()
+            self.play_pause_button.config(text="Play")
+
+            try:
+                is_stopped = pygame.mixer.music.get_pos() == -1
+            except pygame.error:
+                is_stopped = True
+
+            if is_stopped:
+                self.music_status_label.config(text="Music is Stopped")
                 self.stop_button.config(state='disabled')
+            else:  # Paused
+                self.music_status_label.config(text="Music is Paused")
+                self.stop_button.config(state='normal')
 
     def toggle_music(self):
         """Toggles music playback on and off."""
@@ -307,5 +384,71 @@ class MusicTab(ttk.Frame):
     def set_volume(self, value):
         """Sets the music volume based on the slider value."""
         if self.music_player:
-            self.music_player.set_volume(float(value))
-            self.root.save_preferences(music_volume=self.music_player.current_volume)
+            volume = float(value)
+            self.music_player.set_volume(volume)
+            self.volume_percent_var.set(f"{int(volume * 100)}%")
+            self.root.save_preferences(music_volume=volume)
+
+    def next_song(self):
+        """Plays the next song."""
+        if self.music_player:
+            self.music_player.play_next_song()
+            self.update_music_ui()
+            self.root.save_preferences(music_is_playing=self.music_player.is_playing)
+
+    def prev_song(self):
+        """Plays the previous song."""
+        if self.music_player:
+            self.music_player.play_previous_song()
+            self.update_music_ui()
+            self.root.save_preferences(music_is_playing=self.music_player.is_playing)
+
+    def add_tracks(self):
+        """
+        Opens a file dialog to select and copy new music files to the music directory.
+        """
+        file_paths = filedialog.askopenfilenames(
+            title="Select music files to add",
+            filetypes=[
+                ("Audio Files", "*.mp3 *.wav *.ogg *.flac"),
+                ("All files", "*.*")
+            ]
+        )
+
+        if not file_paths:
+            return
+
+        added_count = 0
+        skipped_count = 0
+        music_dir = self.music_player.music_dir
+
+        for src_path in file_paths:
+            filename = os.path.basename(src_path)
+            dest_path = os.path.join(music_dir, filename)
+
+            if os.path.exists(dest_path):
+                logging.warning(f"Track '{filename}' already exists. Skipping.")
+                skipped_count += 1
+                continue
+
+            try:
+                shutil.copy2(src_path, dest_path)
+                added_count += 1
+                logging.info(f"Added track: {filename}")
+            except Exception as e:
+                logging.error(f"Failed to copy {filename}: {e}")
+                messagebox.showerror("Copy Error", f"Failed to copy {filename}:\n{e}")
+
+        # Reload music list and update UI
+        self.music_player.load_music_from_folder()
+        self.update_music_ui()
+
+        # Show summary
+        summary_message = []
+        if added_count > 0:
+            summary_message.append(f"Successfully added {added_count} new track(s).")
+        if skipped_count > 0:
+            summary_message.append(f"Skipped {skipped_count} track(s) that already exist.")
+
+        if summary_message:
+            messagebox.showinfo("Add Tracks Complete", "\n".join(summary_message))
