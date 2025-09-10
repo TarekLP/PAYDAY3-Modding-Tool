@@ -5,40 +5,7 @@ from tkinter import ttk
 
 # PD3 green accent
 GREEN = "#4a663b"
-RED = "#a63232"  # For destructive actions
-
-def create_rounded_rect_image(width, height, radius, color):
-    """Creates a PhotoImage of a rounded rectangle using pixel-by-pixel drawing."""
-    image = tk.PhotoImage(width=width, height=height)
-    image.blank()  # Start with a transparent image
-
-    r = radius
-    r_squared = (r - 1)**2
-
-    for y in range(height):
-        for x in range(width):
-            # Determine if the pixel is part of the rounded rectangle
-            is_pixel_on = False
-            
-            # In one of the four corner quadrants
-            if x < r and y < r:  # Top-left
-                if (x - r + 1)**2 + (y - r + 1)**2 <= r_squared:
-                    is_pixel_on = True
-            elif x >= width - r and y < r:  # Top-right
-                if (x - (width - r))**2 + (y - r + 1)**2 <= r_squared:
-                    is_pixel_on = True
-            elif x < r and y >= height - r:  # Bottom-left
-                if (x - r + 1)**2 + (y - (height - r))**2 <= r_squared:
-                    is_pixel_on = True
-            elif x >= width - r and y >= height - r:  # Bottom-right
-                if (x - (width - r))**2 + (y - (height - r))**2 <= r_squared:
-                    is_pixel_on = True
-            else:  # Not in a corner quadrant, so it's part of the central cross
-                is_pixel_on = True
-
-            if is_pixel_on:
-                image.put(color, (x, y))
-    return image
+RED = "#a63232" # For destructive actions
 
 
 def apply_styles(style):
@@ -140,36 +107,19 @@ def apply_styles(style):
     RED_ACTIVE = '#c24d4d'
     RED_PRESSED = '#8f2b2b'
 
-    # --- Caching for Procedurally Generated Images ---
-    # This logic generates button images once and saves them to a cache folder.
-    # Subsequent runs will load the cached images, significantly speeding up startup.
+    # --- Load Button Images from Cache ---
     CACHE_DIR = os.path.join(os.path.dirname(__file__), 'cache')
     os.makedirs(CACHE_DIR, exist_ok=True)
-
-    img_width, img_height, img_radius = 32, 32, 15
     
-    button_images_to_process = {
-        "img_btn_green_normal": ("btn_green_normal.png", GREEN),
-        "img_btn_green_active": ("btn_green_active.png", GREEN_ACTIVE),
-        "img_btn_green_pressed": ("btn_green_pressed.png", GREEN_PRESSED),
-        "img_btn_red_normal": ("btn_red_normal.png", RED),
-        "img_btn_red_active": ("btn_red_active.png", RED_ACTIVE),
-        "img_btn_red_pressed": ("btn_red_pressed.png", RED_PRESSED),
-    }
-
-    for attr_name, (filename, color) in button_images_to_process.items():
-        image_path = os.path.join(CACHE_DIR, filename)
-        try:
-            if os.path.exists(image_path):
-                image = tk.PhotoImage(file=image_path)
-            else:
-                image = create_rounded_rect_image(img_width, img_height, img_radius, color)
-                image.write(image_path, format='png')
-            setattr(style, attr_name, image)
-        except Exception as e:
-            print(f"Warning: Could not load or create cached image {filename}. Error: {e}")
-            image = create_rounded_rect_image(img_width, img_height, img_radius, color)
-            setattr(style, attr_name, image)
+    # Load green button images
+    style.img_btn_green_normal = tk.PhotoImage(file=os.path.join(CACHE_DIR, "btn_green_normal.png"))
+    style.img_btn_green_active = tk.PhotoImage(file=os.path.join(CACHE_DIR, "btn_green_active.png"))
+    style.img_btn_green_pressed = tk.PhotoImage(file=os.path.join(CACHE_DIR, "btn_green_pressed.png"))
+    
+    # Load red button images
+    style.img_btn_red_normal = tk.PhotoImage(file=os.path.join(CACHE_DIR, "btn_red_normal.png"))
+    style.img_btn_red_active = tk.PhotoImage(file=os.path.join(CACHE_DIR, "btn_red_active.png"))
+    style.img_btn_red_pressed = tk.PhotoImage(file=os.path.join(CACHE_DIR, "btn_red_pressed.png"))
 
     # Create image-based elements. The 'border' option makes them stretchable like 9-patch images.
     style.element_create("Button.background.green", "image", style.img_btn_green_normal,
