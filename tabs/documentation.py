@@ -34,8 +34,8 @@ class DocumentationTab(ttk.Frame):
                 ("Custom Heist Video Tutorials", "https://youtube.com/playlist?list=PLRSASA7UrjTvrBML_cbcwKFE6ZnZkRf-C&si=bdRbA17Utq9sP1tC"),
             ],
             "ID Spreadsheets & Tools": [
-                ("Wwise Media IDs", "https://docs.google.com/spreadsheets/d/1Rk0gkPiMuUoGONi914qP1zWtZI421Gsz4QwUvuwGfsk/edit?gid=0#gid=0"),
-                ("Wwise Localized Media IDs", "https://docs.google.com/spreadsheets/d/179bC0JiYz54VarSKhQkcYsxAXCnmrTRd_vUWhop_YvM/edit?gid=0#gid=0"),
+                ("Wwise Media IDs", "https://docs.google.com/spreadsheets/d/1j_krhOGUE0zl-TiMF9depNCeyE89RNxquWfKDLk6vJw/edit?gid=0#gid=0"),
+                ("Wwise Localized Media IDs", "https://docs.google.com/spreadsheets/d/1LVGv56lxQjI10vf0TdGN97Bq1qJC9FNbU0CyUa4tpdU/edit?gid=0#gid=0"),
                 ("Gun IDs", "https://docs.google.com/spreadsheets/d/1Me4OK7pksZzkMfCuIqKW-27bGTxro_2q372fwUQYnTY/edit?gid=0#gid=0"),
                 ("Female Heister IDs", "https://docs.google.com/spreadsheets/d/16UYUj-X1q94hR0AqaY3PvmlODPEtNKdbOk76D0locmE/edit?usp=sharing"),
                 ("Male Heister IDs", "https://docs.google.com/spreadsheets/d/1BwiYpH1KfwB6C6uDalqYCJXt2HOF75H5CQVCEZ_jbuk/edit?usp=sharing"),
