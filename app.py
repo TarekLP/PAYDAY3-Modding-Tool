@@ -39,6 +39,7 @@ class UEFileDeleterApp(TkinterDnD.Tk):
         self.last_folder_path = ""
         self.last_media_csv_path = ""
         self.last_localized_csv_path = ""
+        self.music_volume = 0.5
         self.load_preferences()
 
         # Set the window icon
