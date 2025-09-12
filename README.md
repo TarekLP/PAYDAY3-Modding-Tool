@@ -1,3 +1,4 @@
+![Alt text](utils/Branding/PAYDAY3ModdingToolBanner.png)
 ### Introduction ###
 This Tool is designed for helping Mod Makers mod PAYDAY 3, by moving all the documentation links into one tab, allowing for easy file cleanup using Prefixes and by giving an easy of way packaging your mod in a 
 Mod manager friendly way. This tool has been written in Python by me (Tarek), but a lot of big Modders in the Scene have given permission for their Guides to be used in the tool.
