@@ -10,15 +10,13 @@ Mod manager friendly way. This tool has been written in Python by me (Tarek), bu
 - Documentation Tab for all the google doc guides that are spread through out MWS
 
 ### Setup ###
-Install the Requirements from requirements.txt
-
-Run this command in your Tool Folder by going into your Explorer and typing "cmd" into the top filepath bar:
-"pip install -r requirements.txt"
-(without "" of course)
+Download the Zip and just extract the Folders.
+Go into the "PAYDAY 3 Modding Tool" folder and click on "PAYDAY 3 Modding Tool.exe"
+If you need to select the CSV files, go into the resource folder and select them there. (Youll have to manually update it as I havent found a way to automatically do that.)
 
 
 ### Running the Tool ###
-Run main.py (will be this way till I can make it an exe)
+Run "PAYDAY 3 Modding Tool.exe"
 
 
 
